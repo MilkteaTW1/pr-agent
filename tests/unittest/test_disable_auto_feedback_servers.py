@@ -4,6 +4,8 @@ The docs say that with the flag set PR-Agent runs no automatic tools "when a new
 new code is pushed to an open PR". Each server's auto-command runner must honour it for every command
 list it can be asked to run (pr_commands, push_commands, review_commands, reviewer_commands).
 """
+from copy import deepcopy
+
 import pytest
 
 from pr_agent.config_loader import get_settings
@@ -61,16 +63,21 @@ CASES = [(name, runner, section, conf) for name, runner, section, confs in SERVE
 
 @pytest.fixture
 def auto_settings(monkeypatch):
-    """Command lists configured, repository settings left alone, flag set by the test."""
+    """Command lists configured, repository settings left alone, flag set by the test; restored afterwards."""
     settings = get_settings()
+    sections = ("github_app", "gitlab", "gitea", "bitbucket_app", "azure_devops_server")
+    originals = {name: deepcopy(settings.get(name)) for name in (*sections, "config")}
     monkeypatch.setattr("pr_agent.servers.bitbucket_app.apply_repo_settings", lambda url: None)
     monkeypatch.setattr("pr_agent.servers.azuredevops_server_webhook.apply_repo_settings", lambda url: None)
-    for section in ("github_app", "gitlab", "gitea", "bitbucket_app", "azure_devops_server"):
-        for conf in ("pr_commands", "push_commands", "review_commands", "reviewer_commands"):
-            settings.set(f"{section}.{conf}", ["/review"])
-        settings.set(f"{section}.handle_push_trigger", True)
-    yield settings
-    settings.set("config.disable_auto_feedback", False)
+    try:
+        for section in sections:
+            for conf in ("pr_commands", "push_commands", "review_commands", "reviewer_commands"):
+                settings.set(f"{section}.{conf}", ["/review"])
+            settings.set(f"{section}.handle_push_trigger", True)
+        yield settings
+    finally:
+        for name, original in originals.items():
+            settings.set(name, original)
 
 
 def test_the_gate_follows_the_setting(auto_settings):
