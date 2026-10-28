@@ -69,6 +69,8 @@ def auto_settings(monkeypatch):
     originals = {name: deepcopy(settings.get(name)) for name in (*sections, "config")}
     monkeypatch.setattr("pr_agent.servers.bitbucket_app.apply_repo_settings", lambda url: None)
     monkeypatch.setattr("pr_agent.servers.azuredevops_server_webhook.apply_repo_settings", lambda url: None)
+    # an empty payload would be rejected here, before the gate under test
+    monkeypatch.setattr("pr_agent.servers.gitlab_webhook.should_process_pr_logic", lambda data: True)
     try:
         for section in sections:
             for conf in ("pr_commands", "push_commands", "review_commands", "reviewer_commands"):
