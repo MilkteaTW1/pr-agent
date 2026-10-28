@@ -5,6 +5,7 @@ import difflib
 import html
 import re
 import textwrap
+from collections.abc import Mapping
 from enum import StrEnum
 from io import StringIO
 from typing import Any, TypedDict
@@ -802,11 +803,32 @@ def update_settings_from_args(args: list[str]) -> list[str]:
                     other_args.append(arg)
                     continue
                 key, value = _fix_key_value(*vals)
+                if '.' not in key and isinstance(get_settings().get(key), Mapping):
+                    # A whole-section argument merges key by key, like repository settings do; replacing the
+                    # section would drop every key the argument does not name.
+                    if not isinstance(value, Mapping):
+                        get_logger().error(f'Ignoring --{key.lower()}: a whole section can only be set from a '
+                                           f'mapping such as --{key.lower()}={{key: value}}')
+                        continue
+                    for path, leaf in _flatten_mapping(key, value):
+                        get_settings().set(path, leaf)
+                    get_logger().info(f'Updated settings of {key} from: "{value}"')
+                    continue
                 get_settings().set(key, value)
                 get_logger().info(f'Updated setting {key} to: "{value}"')
             else:
                 other_args.append(arg)
     return other_args
+
+
+def _flatten_mapping(prefix: str, mapping: Mapping):
+    """Yield (dotted path, value) for every leaf of a possibly nested mapping."""
+    for k, v in mapping.items():
+        path = f"{prefix}.{k}"
+        if isinstance(v, Mapping) and v:
+            yield from _flatten_mapping(path, v)
+        else:
+            yield path, v
 
 
 def _fix_key_value(key: str, value: str):
