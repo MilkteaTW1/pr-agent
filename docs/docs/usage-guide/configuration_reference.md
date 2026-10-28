@@ -423,6 +423,8 @@ _This section only documents commented-out examples; see the [TOML source](https
 | --- | --- | --- |
 | `avoid_full_files` | false |  |
 | `request_timeout` | 30 | positive seconds for connection and response-read inactivity timeouts |
+| `handle_push_trigger` | false | run push_commands when new commits are pushed to an open PR |
+| `push_commands` | [] |  |
 
 
 ## `[local]` {#local}
@@ -443,6 +445,8 @@ _This section only documents commented-out examples; see the [TOML source](https
 | Key | Default | Description |
 | --- | --- | --- |
 | `url` | "" | URL to the BitBucket Server instance |
+| `handle_push_trigger` | false | run push_commands when new commits are pushed to an open PR |
+| `push_commands` | [] |  |
 
 
 ## `[jira]` {#jira}
