@@ -67,8 +67,8 @@ def auto_settings(monkeypatch):
     settings = get_settings()
     sections = ("github_app", "gitlab", "gitea", "bitbucket_app", "azure_devops_server")
     originals = {name: deepcopy(settings.get(name)) for name in (*sections, "config")}
-    monkeypatch.setattr("pr_agent.servers.bitbucket_app.apply_repo_settings", lambda url: None)
-    monkeypatch.setattr("pr_agent.servers.azuredevops_server_webhook.apply_repo_settings", lambda url: None)
+    monkeypatch.setattr(bitbucket_app, "apply_repo_settings", lambda url: None)
+    monkeypatch.setattr(azuredevops_server_webhook, "apply_repo_settings", lambda url: None)
     # an empty payload would be rejected here, before the gate under test
     monkeypatch.setattr("pr_agent.servers.gitlab_webhook.should_process_pr_logic", lambda data: True)
     try:
